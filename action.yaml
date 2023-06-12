@@ -1,0 +1,46 @@
+name: Setup Elixir
+description: Simultaneously setup Elixir, Erlang and cache each build
+
+branding:
+  icon: package
+  color: blue
+
+inputs:
+  otp-version:
+    description: Nominate a specific Erlang/OTP version
+    required: true
+  elixir-version:
+    description: Nominate a specific Elixir version
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Elixir and OTP
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ inputs.otp-version }}
+        elixir-version: ${{ inputs.elixir-version }}
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      id: cache-deps
+      env:
+        cache-name: elixir-deps
+      with:
+        path: deps
+        key: ${{ runner.os }}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-mix-${{ env.cache-name }}-
+
+    - name: Cache build
+      uses: actions/cache@v3
+      id: cache-build
+      env:
+        cache-name: elixir-build
+      with:
+        path: _build
+        key: ${{ runner.os }}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-mix-${{ env.cache-name }}-
+          ${{ runner.os }}-mix-
