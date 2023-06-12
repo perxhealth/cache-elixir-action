@@ -1,0 +1,35 @@
+name: Preflight
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        otp: ['23.2', '24.3', '25.1', '26.0']
+        elixir: ['1.12.3', '1.13.0', '1.14.15']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Elixir ${{ matrix.elixir }} and Erlang/OTP ${{ matrix.otp }}
+        uses: ./
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Check Elixir version
+        run: |
+          ELIXIR_VERSION=$(elixir -v)
+          if [ "$ELIXIR_VERSION" -ne *"Elixir ${{ matrix.elixir }}"* ]; then exit 1; fi
+
+      - name: Check Erlang/OTP version
+        run: |
+          ERLANG_VERSION=$(erl -eval '{ok, Version} = file:read_file(filename:join([code:root_dir(), "releases", erlang:system_info(otp_release), "OTP_VERSION"])), io:fwrite(Version), halt().' -noshell)
+          if [ "$ERLANG_VERSION" -ne "${{ matrix.otp }}" ]; then exit 1; fi
